@@ -4,9 +4,12 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace AutomatyKomorkowe
 {
@@ -21,8 +24,8 @@ namespace AutomatyKomorkowe
         }
 
 
-        BitmapImage map;
-        public BitmapImage Map
+        BitmapSource map;
+        public BitmapSource Map
         {
             get { return map; }
             set
@@ -73,34 +76,34 @@ namespace AutomatyKomorkowe
             }
         }
 
-        int sizeX = 50;
-        int sizeY = 50;
+        int width = 50;
+        int length = 50;
 
-        public int SizeX
+        public int Width
         {
-            get { return sizeX; }
+            get { return width; }
             set
             {
                 if (value > 0)
-                    sizeX = value;
+                    width = value;
                 else
-                    sizeX = 1;
+                    width = 1;
 
-                OnPropertyChange("SizeX");
+                OnPropertyChange("Width");
             }
         }
 
-        public int SizeY
+        public int Length
         {
-            get { return sizeY; }
+            get { return length; }
             set
             {
                 if (value > 0)
-                    sizeY = value;
+                    length = value;
                 else
-                    sizeY = 1;
+                    length = 1;
 
-                OnPropertyChange("SizeY");
+                OnPropertyChange("Length");
             }
         }
 
@@ -134,6 +137,8 @@ namespace AutomatyKomorkowe
         public ICommand DecreaseRuleNumber { get; private set; }
         public ICommand ResetStartSate { get; private set; }
 
+        CellularAutomaton automaton;
+        DispatcherTimer timer;
 
         public MainWindowModelView()
         {
@@ -164,12 +169,151 @@ namespace AutomatyKomorkowe
         private void stop(object obj)
         {
             IsStarted = false;
+            if (timer != null)
+                timer.Stop();
         }
 
         private void start(object obj)
         {
+            refreshBindedValues();
+
+            automaton = new CellularAutomaton(Width, Length, RuleNumber);
+            timer = new DispatcherTimer();
+            timer.Interval = new TimeSpan(0, 0, 0, 0, Convert.ToInt32(RefreshTime * 1000));
+            timer.Tick += Timer_Tick;
+            timer.Start();
+
             IsStarted = true;
-            //Map = new BitmapImage(); 
+        }
+
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            if (automaton.CanMove)
+            {
+                automaton.NextStep();
+                drawMap();
+            }
+            else
+            {
+                timer.Stop();
+                IsStarted = false;
+            }
+        }
+
+        private void drawMap()
+        {
+            byte[] pixelData = new byte[Width * Length];
+
+            List<System.Windows.Media.Color> colors = new List<System.Windows.Media.Color>();
+            colors.Add(System.Windows.Media.Colors.LightGray);
+            colors.Add(System.Windows.Media.Colors.Black);
+            BitmapPalette palette = new BitmapPalette(colors);
+
+            System.Windows.Media.PixelFormat pf =
+                System.Windows.Media.PixelFormats.Indexed1;
+
+            int col = Width;
+            int row = Length;
+            int stride = col / pf.BitsPerPixel;
+
+            byte[] pixels = new byte[row * stride];
+
+            int a = 0, b = 0;
+
+            for (int i = 0; i < row * stride; ++i, a++)
+            {
+
+                if(a == Width)
+                {
+                    b++;
+                    a = 0;
+                }
+                if ((automaton.StateMatrix[b][a]))
+                    pixels[i] = 0xff;
+                else
+                    pixels[i] = 0x00;
+            }
+
+            BitmapSource image = BitmapSource.Create(
+                col,
+                row,
+                96,
+                96,
+                pf,
+                palette,
+                pixels,
+                stride);
+
+            Map = image;
+
+            //for (int row = 0; row < Length; row++)
+            //{
+            //    int rowIndex = row * (Width - 1);
+            //    for (int col = 0; col < Width; col++)
+            //    {
+            //        pixelData[col + rowIndex] = (byte)((automaton.StateMatrix[row][col]) ? 0 : 255);
+            //    }
+            //}
+
+            //BitmapSource bmpSource = BitmapSource.Create(Width, Length, 1, 1,
+            //    PixelFormats.Indexed1, null, pixelData, Width);
+
+            //Map = bmpSource;
+
+
+
+            //WriteableBitmap writeableBitmap = new WriteableBitmap(Width, Length, 1, 1, PixelFormats.Indexed1, BitmapPalettes.BlackAndWhite);
+
+            //Int32Rect rect = new Int32Rect(1, 1, 1, 1);
+            //writeableBitmap.WritePixels(rect, new [] { 1 }, 1, 0);
+
+
+
+
+
+
+            //Grid grid = new Grid();
+
+            //for (int i = 0; i < Length; i++)
+            //{
+            //    RowDefinition row = new RowDefinition();
+            //    row.Height = new GridLength(1, GridUnitType.Star);
+            //    grid.RowDefinitions.Add(row);
+            //}
+
+            //for (int i = 0; i < Length; i++)
+            //{
+            //    ColumnDefinition col = new ColumnDefinition();
+            //    col.Width = new GridLength(1, GridUnitType.Star);
+            //    grid.ColumnDefinitions.Add(col);
+            //}
+
+            //for (int row = 0; row < Length; row++)
+            //{
+            //    for (int col = 0; col < Width; col++)
+            //    {
+            //        Label label = new Label();
+            //        Grid.SetRow(label, row);
+            //        Grid.SetColumn(label, col);
+
+            //        label.Background = (automaton.StateMatrix[row][col]) ? Brushes.Black : Brushes.White;
+
+            //        grid.Children.Add(label);
+            //    }
+            //}
+
+            //Map = grid;
+        }
+
+        /// <summary>
+        /// Refresh all textbox value to last saved.
+        /// </summary>
+        private void refreshBindedValues()
+        {
+            Width = width;
+            Length = length;
+            RefreshTime = refreshTime;
+            RuleNumber = ruleNumber;
         }
     }
 }
