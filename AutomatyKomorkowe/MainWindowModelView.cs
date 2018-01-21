@@ -198,29 +198,6 @@ namespace AutomatyKomorkowe
             {
                 timer.Stop();
                 IsStarted = false;
-                //SaveImageToFile("D:\\test.png");
-
-                string text = String.Empty;
-                for(int i = 0; i < Length; i++)
-                {
-                    for (int y = 0; y < Width; y++)
-                    {
-                        text += (automaton.StateMatrix[i][y]) ? "X" : "_";
-                    }
-
-                    text += "\n";
-                }
-                ;
-            }
-        }
-
-        public void SaveImageToFile(string filePath, BitmapSource source)
-        {
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                BitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(source));
-                encoder.Save(fileStream);
             }
         }
 
