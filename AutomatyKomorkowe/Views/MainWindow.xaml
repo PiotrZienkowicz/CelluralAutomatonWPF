@@ -5,11 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AutomatyKomorkowe"
         mc:Ignorable="d"
-        Title="Automaty komórkowe" Height="600" Width="800" Icon="icon.ico" ResizeMode="CanMinimize">
+        Title="Automaty komórkowe" Height="600" Width="800" ResizeMode="CanResizeWithGrip" Icon="/AutomatyKomorkowe;component/Images/icon.ico">
 
         <Window.Resources>
             <local:InverseBooleanConverter x:Key="InverseBooleanConverter" />
-        </Window.Resources>
+        <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
     
         <Grid>
             <Grid.ColumnDefinitions>
@@ -21,21 +22,26 @@
                 <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <UserControl  Grid.Column="0" Grid.Row="0" Margin="10">
-            <Image  x:Name="Map" Stretch="Fill" Source="{Binding Map}" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.EdgeMode="Aliased"/>
-        </UserControl>
+        <StackPanel  Grid.Column="0" Grid.Row="0">
+            <UserControl Height="50" Margin="5" BorderBrush="Black" BorderThickness="1" Visibility="{Binding IsOwnStateEnabled, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+                <TextBox x:Name="CustomStartState" HorizontalAlignment="Stretch" Margin="5" VerticalContentAlignment="Center" Text="{Binding CustomStartStateValues}"/>
+            </UserControl>
+            <UserControl Margin="5" BorderBrush="Black" BorderThickness="1">
+                <Image x:Name="Map" Source="{Binding Map}" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.EdgeMode="Aliased" Stretch="Fill" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+            </UserControl>
+        </StackPanel>
 
         <Rectangle VerticalAlignment="Stretch" Width="1" Margin="2" Stroke="Black" Grid.Column="1" Grid.Row="0" Grid.RowSpan="10"/>
 
         <StackPanel Grid.Column="2" Grid.Row="0" Grid.RowSpan="10">
             <StackPanel x:Name="SettingsPanel" IsEnabled="{Binding IsStarted, Converter={StaticResource InverseBooleanConverter}, Mode=OneWay}">
                 <Label HorizontalAlignment="Center">Szerokość mapy:</Label>
-                <TextBox x:Name="SizeXTextBox" Margin="5" VerticalAlignment="Center" Text="{Binding Width}" />
+                <TextBox x:Name="SizeXTextBox" Margin="5" VerticalAlignment="Center" Text="{Binding Width}" IsEnabled="{Binding IsOwnStateEnabled, Converter={StaticResource InverseBooleanConverter}}"/>
                     
                 <Separator />
                 
                 <Label HorizontalAlignment="Center">Długość mapy:</Label>
-                <TextBox x:Name="SizeYTextBox" Margin="5" VerticalAlignment="Center" Text="{Binding Length}" />
+                <TextBox x:Name="SizeYTextBox" Margin="5" VerticalAlignment="Center" Text="{Binding Length}" IsEnabled="{Binding IsOwnStateEnabled, Converter={StaticResource InverseBooleanConverter}}"/>
                 
                 <Separator />
                 

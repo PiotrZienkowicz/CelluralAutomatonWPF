@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -24,8 +17,25 @@ namespace AutomatyKomorkowe
             PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
         }
 
-
         BitmapSource map;
+        int ruleNumber = 90;
+        int width = 51;
+        int length = 50;
+        bool isOwnStateEnabled;
+        bool isStarted;
+        float refreshTime = 0.01f;
+        string customStartStateValues;
+
+        CellularAutomaton automaton;
+        DispatcherTimer timer;
+        START_STATE startState;
+
+        public ICommand Start { get; private set; }
+        public ICommand Stop { get; private set; }
+        public ICommand IncreaseRuleNumber { get; private set; }
+        public ICommand DecreaseRuleNumber { get; private set; }
+        public ICommand ResetStartSate { get; private set; }
+
         public BitmapSource Map
         {
             get { return map; }
@@ -36,7 +46,6 @@ namespace AutomatyKomorkowe
             }
         }
 
-        int ruleNumber = 4;
         public int RuleNumber
         {
             get { return ruleNumber; }
@@ -52,8 +61,6 @@ namespace AutomatyKomorkowe
             }
         }
 
-
-        START_STATE startState;
         public START_STATE StartState
         {
             get { return startState; }
@@ -66,7 +73,6 @@ namespace AutomatyKomorkowe
             }
         }
 
-        bool isOwnStateEnabled;
         public bool IsOwnStateEnabled
         {
             get { return isOwnStateEnabled; }
@@ -74,11 +80,24 @@ namespace AutomatyKomorkowe
             {
                 isOwnStateEnabled = value;
                 OnPropertyChange("IsOwnStateEnabled");
+
+                if(value)
+                {
+                    resetStartSate(null);
+                }
             }
         }
 
-        int width = 11;
-        int length = 10;
+        public string CustomStartStateValues
+        {
+            get { return customStartStateValues; }
+            set
+            {
+                customStartStateValues = value;
+
+                OnPropertyChange("CustomStartStateValues");
+            }
+        }
 
         public int Width
         {
@@ -108,8 +127,6 @@ namespace AutomatyKomorkowe
             }
         }
 
-        bool isStarted;
-
         public bool IsStarted
         {
             get { return isStarted; }
@@ -120,7 +137,6 @@ namespace AutomatyKomorkowe
             }
         }
 
-        float refreshTime = 0.1f;
         public float RefreshTime
         {
             get { return refreshTime; }
@@ -130,16 +146,6 @@ namespace AutomatyKomorkowe
                 OnPropertyChange("RefreshTime");
             }
         }
-
-
-        public ICommand Start { get; private set; }
-        public ICommand Stop { get; private set; }
-        public ICommand IncreaseRuleNumber { get; private set; }
-        public ICommand DecreaseRuleNumber { get; private set; }
-        public ICommand ResetStartSate { get; private set; }
-
-        CellularAutomaton automaton;
-        DispatcherTimer timer;
 
         public MainWindowModelView()
         {
@@ -154,7 +160,13 @@ namespace AutomatyKomorkowe
 
         private void resetStartSate(object obj)
         {
-            throw new NotImplementedException();
+            string customValues = string.Empty;
+            for (int i = 0; i < Width; i++)
+            {
+                customValues += "0;";
+            }
+
+            CustomStartStateValues = customValues.TrimEnd(';');
         }
 
         private void increaseRuleNumber(object obj)
@@ -177,8 +189,36 @@ namespace AutomatyKomorkowe
         private void start(object obj)
         {
             refreshBindedValues();
+            Map = null;
 
-            automaton = new CellularAutomaton(Width, Length, RuleNumber);
+            bool[] startState = null;
+
+            if(StartState == START_STATE.OWN_STATE && IsOwnStateEnabled)
+            {
+                // parse values from textbox
+                var values = CustomStartStateValues.Split(';');
+                if (values.Length != Width)
+                {
+                    MessageBox.Show(String.Format("Niepoprawna ilość stanów początkowych. Jest {0}, a powinno być {1}", values.Length, Width));
+                    return;
+                }
+
+                startState = new bool[Width];
+                try
+                {
+                    for (int i = 0; i < Width; i++)
+                    {
+                        startState[i] = (values[i] == "1");
+                    }
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show(String.Format("Błąd w trakcie wczytywania wartości początkowych:\n{0}", ex.Message));
+                    return;
+                }
+            }
+
+            automaton = new CellularAutomaton(Width, Length, RuleNumber, startState);
             timer = new DispatcherTimer();
             timer.Interval = new TimeSpan(0, 0, 0, 0, Convert.ToInt32(RefreshTime * 1000));
             timer.Tick += Timer_Tick;
@@ -203,8 +243,6 @@ namespace AutomatyKomorkowe
 
         private void drawMap()
         {
-            byte[] pixelData = new byte[Width * Length];
-
             BitmapPalette palette = BitmapPalettes.Gray256;
             System.Windows.Media.PixelFormat pf =
                 System.Windows.Media.PixelFormats.Gray8;
@@ -233,8 +271,8 @@ namespace AutomatyKomorkowe
             BitmapSource image = BitmapSource.Create(
                 col,
                 row,
-                1,
-                1,
+                96,
+                96,
                 pf,
                 palette,
                 pixels,
