@@ -21,7 +21,9 @@
                 <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Image  x:Name="Map" Stretch="Fill" Margin="10" Source="{Binding Map}" Grid.Column="0" Grid.Row="0" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+        <UserControl  Grid.Column="0" Grid.Row="0" Margin="10">
+            <Image  x:Name="Map" Stretch="Fill" Source="{Binding Map}" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.EdgeMode="Aliased"/>
+        </UserControl>
 
         <Rectangle VerticalAlignment="Stretch" Width="1" Margin="2" Stroke="Black" Grid.Column="1" Grid.Row="0" Grid.RowSpan="10"/>
 

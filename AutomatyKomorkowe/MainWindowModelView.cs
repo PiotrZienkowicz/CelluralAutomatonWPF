@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ namespace AutomatyKomorkowe
             }
         }
 
-        int ruleNumber = 0;
+        int ruleNumber = 4;
         public int RuleNumber
         {
             get { return ruleNumber; }
@@ -76,8 +77,8 @@ namespace AutomatyKomorkowe
             }
         }
 
-        int width = 50;
-        int length = 50;
+        int width = 11;
+        int length = 10;
 
         public int Width
         {
@@ -119,7 +120,7 @@ namespace AutomatyKomorkowe
             }
         }
 
-        float refreshTime = 1;
+        float refreshTime = 0.1f;
         public float RefreshTime
         {
             get { return refreshTime; }
@@ -197,6 +198,29 @@ namespace AutomatyKomorkowe
             {
                 timer.Stop();
                 IsStarted = false;
+                //SaveImageToFile("D:\\test.png");
+
+                string text = String.Empty;
+                for(int i = 0; i < Length; i++)
+                {
+                    for (int y = 0; y < Width; y++)
+                    {
+                        text += (automaton.StateMatrix[i][y]) ? "X" : "_";
+                    }
+
+                    text += "\n";
+                }
+                ;
+            }
+        }
+
+        public void SaveImageToFile(string filePath, BitmapSource source)
+        {
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                BitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(source));
+                encoder.Save(fileStream);
             }
         }
 
@@ -204,105 +228,42 @@ namespace AutomatyKomorkowe
         {
             byte[] pixelData = new byte[Width * Length];
 
-            List<System.Windows.Media.Color> colors = new List<System.Windows.Media.Color>();
-            colors.Add(System.Windows.Media.Colors.LightGray);
-            colors.Add(System.Windows.Media.Colors.Black);
-            BitmapPalette palette = new BitmapPalette(colors);
-
+            BitmapPalette palette = BitmapPalettes.Gray256;
             System.Windows.Media.PixelFormat pf =
-                System.Windows.Media.PixelFormats.Indexed1;
+                System.Windows.Media.PixelFormats.Gray8;
 
             int col = Width;
             int row = Length;
-            int stride = col / pf.BitsPerPixel;
+            int stride = col;
 
-            byte[] pixels = new byte[row * stride];
+            byte[] pixels = new byte[stride * row];
 
             int a = 0, b = 0;
-
-            for (int i = 0; i < row * stride; ++i, a++)
+            for (int i = 0; i < pixels.Length; ++i, a++)
             {
-
                 if(a == Width)
                 {
                     b++;
                     a = 0;
                 }
+
                 if ((automaton.StateMatrix[b][a]))
-                    pixels[i] = 0xff;
-                else
                     pixels[i] = 0x00;
+                else
+                    pixels[i] = 0xff;
             }
 
             BitmapSource image = BitmapSource.Create(
                 col,
                 row,
-                96,
-                96,
+                1,
+                1,
                 pf,
                 palette,
                 pixels,
                 stride);
 
             Map = image;
-
-            //for (int row = 0; row < Length; row++)
-            //{
-            //    int rowIndex = row * (Width - 1);
-            //    for (int col = 0; col < Width; col++)
-            //    {
-            //        pixelData[col + rowIndex] = (byte)((automaton.StateMatrix[row][col]) ? 0 : 255);
-            //    }
-            //}
-
-            //BitmapSource bmpSource = BitmapSource.Create(Width, Length, 1, 1,
-            //    PixelFormats.Indexed1, null, pixelData, Width);
-
-            //Map = bmpSource;
-
-
-
-            //WriteableBitmap writeableBitmap = new WriteableBitmap(Width, Length, 1, 1, PixelFormats.Indexed1, BitmapPalettes.BlackAndWhite);
-
-            //Int32Rect rect = new Int32Rect(1, 1, 1, 1);
-            //writeableBitmap.WritePixels(rect, new [] { 1 }, 1, 0);
-
-
-
-
-
-
-            //Grid grid = new Grid();
-
-            //for (int i = 0; i < Length; i++)
-            //{
-            //    RowDefinition row = new RowDefinition();
-            //    row.Height = new GridLength(1, GridUnitType.Star);
-            //    grid.RowDefinitions.Add(row);
-            //}
-
-            //for (int i = 0; i < Length; i++)
-            //{
-            //    ColumnDefinition col = new ColumnDefinition();
-            //    col.Width = new GridLength(1, GridUnitType.Star);
-            //    grid.ColumnDefinitions.Add(col);
-            //}
-
-            //for (int row = 0; row < Length; row++)
-            //{
-            //    for (int col = 0; col < Width; col++)
-            //    {
-            //        Label label = new Label();
-            //        Grid.SetRow(label, row);
-            //        Grid.SetColumn(label, col);
-
-            //        label.Background = (automaton.StateMatrix[row][col]) ? Brushes.Black : Brushes.White;
-
-            //        grid.Children.Add(label);
-            //    }
-            //}
-
-            //Map = grid;
         }
 
         /// <summary>
